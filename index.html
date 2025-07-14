@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Color Mixer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 600px;
+      align-items: flex-start; /* Left-justify controls */
+    }
+    .color-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+    }
+    canvas {
+      margin-top: 20px;
+      border: 1px solid #ccc;
+      display: block;
+    }
+    #total {
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    #generateBtn {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Color Mixer</h1>
+  <div class="controls" id="controls"></div>
+  <div id="total">Total: 100%</div>
+  <button id="generateBtn" onclick="generateImage()">Generate Image</button>
+  <canvas id="canvas" width="512" height="512"></canvas>
+
+  <script>
+    const MAX_COLORS = 5;
+    const controlsDiv = document.getElementById('controls');
+    const sliders = [];
+    const colors = [];
+
+    const totalDisplay = document.getElementById('total');
+    const generateBtn = document.getElementById('generateBtn');
+
+    for (let i = 0; i < MAX_COLORS; i++) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'color-control';
+
+      const colorInput = document.createElement('input');
+      colorInput.type = 'color';
+      colorInput.value = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+      colors.push(colorInput);
+
+      const slider = document.createElement('input');
+      slider.type = 'range';
+      slider.min = 0;
+      slider.max = 100;
+      slider.value = 20;
+      slider.dataset.index = i;
+
+      const label = document.createElement('span');
+      label.textContent = `20%`;
+
+      slider.oninput = () => {
+        label.textContent = `${slider.value}%`;
+        updateTotal();
+      };
+
+      sliders.push({ slider, label });
+
+      wrapper.appendChild(document.createTextNode(`Color ${i + 1}:`));
+      wrapper.appendChild(colorInput);
+      wrapper.appendChild(slider);
+      wrapper.appendChild(label);
+      controlsDiv.appendChild(wrapper);
+    }
+
+    function updateTotal() {
+      const total = sliders.reduce((sum, s) => sum + parseInt(s.slider.value), 0);
+      totalDisplay.textContent = `Total: ${total}%`;
+      generateBtn.disabled = total !== 100;
+    }
+
+    function generateImage() {
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+      const imageData = ctx.createImageData(canvas.width, canvas.height);
+      const data = imageData.data;
+
+      const colorValues = colors.map(c => hexToRgb(c.value));
+      const probabilities = sliders.map(s => parseInt(s.slider.value) / 100);
+
+      const cumulative = [];
+      probabilities.reduce((acc, p, i) => cumulative[i] = acc + p, 0);
+
+      for (let i = 0; i < data.length; i += 4) {
+        const rand = Math.random();
+        let colorIndex = cumulative.findIndex(c => rand < c);
+        if (colorIndex === -1) colorIndex = MAX_COLORS - 1;
+
+        const color = colorValues[colorIndex];
+        data[i] = color.r;
+        data[i + 1] = color.g;
+        data[i + 2] = color.b;
+        data[i + 3] = 255;
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+    }
+
+    function hexToRgb(hex) {
+      const bigint = parseInt(hex.slice(1), 16);
+      return {
+        r: (bigint >> 16) & 255,
+        g: (bigint >> 8) & 255,
+        b: bigint & 255
+      };
+    }
+
+    updateTotal();
+  </script>
+</body>
+</html>
