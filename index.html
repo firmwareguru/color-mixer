@@ -90,6 +90,11 @@
       slider.oninput = () => {
         label.textContent = `${slider.value}%`;
         updateTotal();
+        saveSettings();
+      };
+
+      colorInput.oninput = () => {
+        saveSettings();
       };
 
       sliders.push({ slider, label });
@@ -143,7 +148,33 @@
       };
     }
 
-    updateTotal();
+    function saveSettings() {
+      const colorValues = colors.map(c => c.value);
+      const sliderValues = sliders.map(s => s.slider.value);
+      localStorage.setItem('colorMixerColors', JSON.stringify(colorValues));
+      localStorage.setItem('colorMixerSliders', JSON.stringify(sliderValues));
+    }
+
+    function loadSettings() {
+      const savedColors = JSON.parse(localStorage.getItem('colorMixerColors'));
+      const savedSliders = JSON.parse(localStorage.getItem('colorMixerSliders'));
+
+      if (savedColors && savedColors.length === MAX_COLORS) {
+        savedColors.forEach((val, i) => {
+          colors[i].value = val;
+        });
+      }
+
+      if (savedSliders && savedSliders.length === MAX_COLORS) {
+        savedSliders.forEach((val, i) => {
+          sliders[i].slider.value = val;
+          sliders[i].label.textContent = `${val}%`;
+        });
+      }
+
+      updateTotal();
+    }
+    loadSettings();
   </script>
 </body>
 </html>
